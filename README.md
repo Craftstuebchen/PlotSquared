@@ -16,6 +16,13 @@ flags. Such as: weather, time, game modes, pvp status.
 Whilst we provide a whole load of unique features, the biggest focus
 is to provide a lag-free and smooth experience.
 
+
+<p align="center">
+    <a href="https://bstats.org/plugin/bukkit/PlotSquared" title="PlotSquared on bStats">
+        <img src="https://bstats.org/signatures/bukkit/PlotSquared.svg" />
+    </a>
+</p>
+
 ## Links
 
 * [Download](https://github.com/IntellectualSites/PlotSquared/releases/tag/dev)
