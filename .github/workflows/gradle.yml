@@ -27,3 +27,7 @@ jobs:
       uses: gradle/wrapper-validation-action@v1
     - name: Test with Gradle
       run: ./gradlew clean build
+    - uses: actions/upload-artifact@v1
+      with:
+        name: PlotSquared
+        path: target/*.jar
