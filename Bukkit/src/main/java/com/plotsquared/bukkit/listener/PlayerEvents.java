@@ -946,7 +946,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             || area.isForcingPlotChat())) {
             return;
         }
-        if (plot.isDenied(plotPlayer.getUUID())) {
+        if (plot.isDenied(plotPlayer.getUUID()) && !Permissions.hasPermission(plotPlayer, Captions.PERMISSION_ADMIN_CHAT_BYPASS)) {
             return;
         }
         event.setCancelled(true);
