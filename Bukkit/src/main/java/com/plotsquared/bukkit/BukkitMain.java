@@ -190,7 +190,7 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain 
             return;
         }
 
-        if (Settings.Enabled_Components.UPDATE_NOTIFICATIONS) {
+        if (PremiumVerification.isPremium() && Settings.Enabled_Components.UPDATE_NOTIFICATIONS) {
             new UpdateUtility(this).updateChecker();
         }
 
@@ -717,6 +717,8 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain 
             }
             return map;
         }));
+        metrics.addCustomChart(new Metrics.SimplePie("premium",
+            () -> PremiumVerification.isPremium() ? "Premium" : "Non-Premium"));
     }
 
     @Override public ChunkManager initChunkManager() {
