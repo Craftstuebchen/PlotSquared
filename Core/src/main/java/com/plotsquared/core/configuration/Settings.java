@@ -357,6 +357,22 @@ public class Settings extends Config {
     }
 
 
+    @Comment("Enable or disable parts of the plugin specific to using Paper")
+    public static final class Paper_Components {
+        @Comment("Enable Paper's listeners.") public static boolean PAPER_LISTENERS = true;
+        @Comment("Prevent entities from leaving plots") public static boolean ENTITY_PATHING = true;
+        @Comment(
+            "Cancel entity spawns when the chunk is loaded if the PlotArea's mob spawning is off")
+        public static boolean CANCEL_CHUNK_SPAWN = true;
+        @Comment("Use paper's PlayerLaunchProjectileEvent to cancel projectiles")
+        public static boolean PLAYER_PROJECTILE = true;
+        @Comment("Cancel entity spawns from spawners before they happen (performance buff)")
+        public static boolean SPAWNER_SPAWN = true;
+        @Comment("Cancel entity spawns from tick spawn rates before they happen (performance buff)")
+        public static boolean CREATURE_SPAWN = true;
+    }
+
+
     @Comment({"Enable or disable parts of the plugin",
         "Note: A cache will use some memory if enabled"})
     public static final class Enabled_Components { // Group the following values into a new config section
