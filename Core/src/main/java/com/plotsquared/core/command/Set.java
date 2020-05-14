@@ -37,8 +37,10 @@ import com.plotsquared.core.util.MainUtil;
 import com.plotsquared.core.util.PatternUtil;
 import com.plotsquared.core.util.Permissions;
 import com.plotsquared.core.util.StringMan;
+import com.plotsquared.core.util.WorldUtil;
 import com.sk89q.worldedit.function.pattern.Pattern;
 import com.sk89q.worldedit.world.block.BlockCategory;
+import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 
 import java.util.ArrayList;
@@ -80,7 +82,13 @@ public class Set extends SubCommand {
                 String material =
                     StringMan.join(Arrays.copyOfRange(args, 1, args.length), ",").trim();
 
-                final List<String> forbiddenTypes = Settings.General.INVALID_BLOCKS;
+                final List<String> forbiddenTypes = new ArrayList<>(Settings.General.INVALID_BLOCKS);
+
+                if (Settings.Enabled_Components.CHUNK_PROCESSOR) {
+                    forbiddenTypes.addAll(WorldUtil.IMP.getTileEntityTypes().stream().map(
+                        BlockType::getName).collect(Collectors.toList()));
+                }
+
                 if (!Permissions.hasPermission(player, Captions.PERMISSION_ADMIN_ALLOW_UNSAFE) &&
                     !forbiddenTypes.isEmpty()) {
                     for (String forbiddenType : forbiddenTypes) {
@@ -96,11 +104,13 @@ public class Set extends SubCommand {
 
                             if (blockType.startsWith("##")) {
                                 try {
-                                    final BlockCategory category = BlockCategory.REGISTRY.get(blockType.substring(2).toLowerCase(Locale.ENGLISH));
+                                    final BlockCategory category = BlockCategory.REGISTRY.get(blockType.substring(2)
+                                        .replaceAll("[*^|]+", "").toLowerCase(Locale.ENGLISH));
                                     if (category == null || !category.contains(BlockTypes.get(forbiddenType))) {
                                         continue;
                                     }
-                                } catch (final Throwable ignored) {}
+                                } catch (final Throwable ignored) {
+                                }
                             } else if (!blockType.contains(forbiddenType)) {
                                 continue;
                             }
@@ -147,13 +157,13 @@ public class Set extends SubCommand {
             }
 
             @Override
-            public Collection<Command> tab(final PlotPlayer player, final String[] args, final boolean space) {
-                return PatternUtil.getSuggestions(player,  StringMan.join(args, ",").trim())
-                    .stream()
+            public Collection<Command> tab(final PlotPlayer player, final String[] args,
+                final boolean space) {
+                return PatternUtil.getSuggestions(player, StringMan.join(args, ",").trim()).stream()
                     .map(value -> value.toLowerCase(Locale.ENGLISH).replace("minecraft:", ""))
                     .filter(value -> value.startsWith(args[0].toLowerCase(Locale.ENGLISH)))
-                    .map(value -> new Command(null, false, value, "", RequiredType.NONE, null) {})
-                    .collect(Collectors.toList());
+                    .map(value -> new Command(null, false, value, "", RequiredType.NONE, null) {
+                    }).collect(Collectors.toList());
             }
         };
     }
@@ -197,13 +207,16 @@ public class Set extends SubCommand {
         return noArgs(player);
     }
 
-    @Override public Collection<Command> tab(final PlotPlayer player, final String[] args, final boolean space) {
+    @Override
+    public Collection<Command> tab(final PlotPlayer player, final String[] args,
+        final boolean space) {
         if (args.length == 1) {
             return Stream
-                .of("biome", "alias", "home", "main", "floor", "air", "all", "border", "wall", "outline", "middle")
+                .of("biome", "alias", "home", "main", "floor", "air", "all", "border", "wall",
+                    "outline", "middle")
                 .filter(value -> value.startsWith(args[0].toLowerCase(Locale.ENGLISH)))
-                .map(value -> new Command(null, false, value, "", RequiredType.NONE, null) {})
-                .collect(Collectors.toList());
+                .map(value -> new Command(null, false, value, "", RequiredType.NONE, null) {
+                }).collect(Collectors.toList());
         } else if (args.length > 1) {
             // Additional checks
             Plot plot = player.getCurrentPlot();
@@ -223,7 +236,8 @@ public class Set extends SubCommand {
             }
 
             // components
-            HashSet<String> components = new HashSet<>(Arrays.asList(plot.getManager().getPlotComponents(plot.getId())));
+            HashSet<String> components =
+                new HashSet<>(Arrays.asList(plot.getManager().getPlotComponents(plot.getId())));
             if (components.contains(args[0].toLowerCase())) {
                 return this.component.tab(player, newArgs, space);
             }
