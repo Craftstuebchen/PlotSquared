@@ -493,7 +493,7 @@ public class Settings extends Config {
     public static final class QUEUE {
         @Comment({"Average time per tick spent completing chunk tasks in ms.",
         "Waits (chunk task time / target_time) ticks before completely the next task."})
-        public static int TARGET_TIME = 40;
+        public static int TARGET_TIME = 65;
     }
 
 

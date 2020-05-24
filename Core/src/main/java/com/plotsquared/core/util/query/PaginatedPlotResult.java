@@ -23,18 +23,51 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.plotsquared.core.plot;
+package com.plotsquared.core.util.query;
+
+import com.google.common.base.Preconditions;
+import com.plotsquared.core.plot.Plot;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Use {@link com.plotsquared.core.util.query.PlotQuery} instead
+ * Paginated collection of plots as a result of a {@link PlotQuery query}
  */
-@Deprecated public abstract class PlotFilter {
-    public boolean allowsArea(final PlotArea area) {
-        return true;
+public final class PaginatedPlotResult {
+
+    private final List<Plot> plots;
+    private final int pageSize;
+
+    PaginatedPlotResult(@NotNull final List<Plot> plots, final int pageSize) {
+        this.plots = plots;
+        this.pageSize = pageSize;
     }
 
-    public boolean allowsPlot(final Plot plot) {
-        return true;
+    /**
+     * Get the plots belonging to a certain page.
+     *
+     * @param page Positive page number. Indexed from 1
+     * @return Plots that belong to the specified page
+     */
+    public List<Plot> getPage(final int page) {
+        Preconditions.checkState(page >= 0, "Page must be positive");
+        final int from = (page - 1) * this.pageSize;
+        if (this.plots.size() < from) {
+            return Collections.emptyList();
+        }
+        final int to = Math.max(from + pageSize, this.plots.size());
+        return this.plots.subList(from, to);
+    }
+
+    /**
+     * Get the number of available pages
+     *
+     * @return Available pages
+     */
+    public int getPages() {
+        return (int) Math.ceil((double) plots.size() / (double) pageSize);
     }
 
 }

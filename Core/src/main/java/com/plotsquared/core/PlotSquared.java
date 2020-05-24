@@ -53,6 +53,7 @@ import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.BlockBucket;
 import com.plotsquared.core.plot.Plot;
 import com.plotsquared.core.plot.PlotArea;
+import com.plotsquared.core.plot.PlotAreaTerrainType;
 import com.plotsquared.core.plot.PlotAreaType;
 import com.plotsquared.core.plot.PlotCluster;
 import com.plotsquared.core.plot.PlotFilter;
@@ -82,6 +83,7 @@ import com.plotsquared.core.util.StringMan;
 import com.plotsquared.core.util.StringWrapper;
 import com.plotsquared.core.util.WorldUtil;
 import com.plotsquared.core.util.logger.ILogger;
+import com.plotsquared.core.util.query.PlotQuery;
 import com.plotsquared.core.util.task.TaskManager;
 import com.plotsquared.core.util.uuid.UUIDHandler;
 import com.sk89q.worldedit.WorldEdit;
@@ -90,6 +92,7 @@ import com.sk89q.worldedit.regions.CuboidRegion;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -116,6 +119,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -270,7 +274,8 @@ public class PlotSquared {
             // create setup util class
             SetupUtils.manager = this.IMP.initSetupUtils();
             // Set block
-            GlobalBlockQueue.IMP = new GlobalBlockQueue(IMP.initBlockQueue(), 1, Settings.QUEUE.TARGET_TIME);
+            GlobalBlockQueue.IMP =
+                new GlobalBlockQueue(IMP.initBlockQueue(), 1, Settings.QUEUE.TARGET_TIME);
             GlobalBlockQueue.IMP.runTask();
             // Set chunk
             ChunkManager.manager = this.IMP.initChunkManager();
@@ -640,17 +645,7 @@ public class PlotSquared {
      * @return Set of base Plots
      */
     public Set<Plot> getBasePlots() {
-        int size = getPlotCount();
-        final Set<Plot> result = new HashSet<>(size);
-        forEachPlotArea(value -> {
-            for (Plot plot : value.getPlots()) {
-                if (!plot.isBasePlot()) {
-                    continue;
-                }
-                result.add(plot);
-            }
-        });
-        return Collections.unmodifiableSet(result);
+        return PlotQuery.newQuery().whereBasePlot().asSet();
     }
 
     public List<Plot> sortPlotsByTemp(Collection<Plot> plots) {
@@ -903,27 +898,25 @@ public class PlotSquared {
      *
      * @param filters the filter
      * @return a filtered set of plots
+     * @deprecated Use {@link PlotQuery}
      */
-    public Set<Plot> getPlots(final PlotFilter... filters) {
-        final HashSet<Plot> set = new HashSet<>();
-        forEachPlotArea(value -> {
-            for (PlotFilter filter : filters) {
-                if (!filter.allowsArea(value)) {
-                    return;
+    @Deprecated public Set<Plot> getPlots(final PlotFilter... filters) {
+        final List<PlotArea> areas = new LinkedList<>();
+        for (final PlotArea plotArea : this.getPlotAreas()) {
+            for (final PlotFilter filter : filters) {
+                if (filter.allowsArea(plotArea)) {
+                    areas.add(plotArea);
                 }
             }
-            loop:
-            for (Entry<PlotId, Plot> entry2 : value.getPlotEntries()) {
-                Plot plot = entry2.getValue();
-                for (PlotFilter filter : filters) {
-                    if (!filter.allowsPlot(plot)) {
-                        continue loop;
-                    }
+        }
+        return PlotQuery.newQuery().inAreas(areas).thatPasses(plot -> {
+            for (final PlotFilter filter : filters) {
+                if (!filter.allowsPlot(plot)) {
+                    return false;
                 }
-                set.add(plot);
             }
-        });
-        return set;
+            return true;
+        }).asSet();
     }
 
     /**
@@ -990,7 +983,7 @@ public class PlotSquared {
      * @return Set of plot
      */
     public Set<Plot> getPlots(String world, PlotPlayer player) {
-        return getPlots(world, player.getUUID());
+        return PlotQuery.newQuery().inWorld(world).ownedBy(player).asSet();
     }
 
     /**
@@ -1001,7 +994,7 @@ public class PlotSquared {
      * @return Set of plot
      */
     public Set<Plot> getPlots(PlotArea area, PlotPlayer player) {
-        return getPlots(area, player.getUUID());
+        return PlotQuery.newQuery().inArea(area).ownedBy(player).asSet();
     }
 
     /**
@@ -1012,10 +1005,7 @@ public class PlotSquared {
      * @return Set of plot
      */
     public Set<Plot> getPlots(String world, UUID uuid) {
-        final Set<Plot> plots =
-            getPlots(world).stream().filter(plot -> plot.hasOwner() && plot.isOwnerAbs(uuid))
-                .collect(Collectors.toSet());
-        return Collections.unmodifiableSet(plots);
+        return PlotQuery.newQuery().inWorld(world).ownedBy(uuid).asSet();
     }
 
     /**
@@ -1026,13 +1016,7 @@ public class PlotSquared {
      * @return Set of plots
      */
     public Set<Plot> getPlots(PlotArea area, UUID uuid) {
-        final Set<Plot> plots = new HashSet<>();
-        for (Plot plot : getPlots(area)) {
-            if (plot.hasOwner() && plot.isOwnerAbs(uuid)) {
-                plots.add(plot);
-            }
-        }
-        return Collections.unmodifiableSet(plots);
+        return PlotQuery.newQuery().inArea(area).ownedBy(uuid).asSet();
     }
 
     /**
@@ -1047,9 +1031,7 @@ public class PlotSquared {
     }
 
     public Collection<Plot> getPlots(String world) {
-        final Set<Plot> set = new HashSet<>();
-        forEachPlotArea(world, value -> set.addAll(value.getPlots()));
-        return set;
+        return PlotQuery.newQuery().inWorld(world).asCollection();
     }
 
     /**
@@ -1059,7 +1041,7 @@ public class PlotSquared {
      * @return Set of Plot
      */
     public Set<Plot> getPlots(PlotPlayer player) {
-        return getPlots(player.getUUID());
+        return PlotQuery.newQuery().ownedBy(player).asSet();
     }
 
     public Collection<Plot> getPlots(PlotArea area) {
@@ -1081,13 +1063,7 @@ public class PlotSquared {
      * @return Set of Plot's owned by the player
      */
     public Set<Plot> getPlots(final UUID uuid) {
-        final Set<Plot> plots = new HashSet<>();
-        forEachPlot(value -> {
-            if (value.isOwnerAbs(uuid)) {
-                plots.add(value);
-            }
-        });
-        return Collections.unmodifiableSet(plots);
+        return PlotQuery.newQuery().ownedBy(uuid).asSet();
     }
 
     public boolean hasPlot(final UUID uuid) {
@@ -1096,13 +1072,7 @@ public class PlotSquared {
     }
 
     public Set<Plot> getBasePlots(final UUID uuid) {
-        final Set<Plot> plots = new HashSet<>();
-        forEachBasePlot(value -> {
-            if (value.isOwner(uuid)) {
-                plots.add(value);
-            }
-        });
-        return Collections.unmodifiableSet(plots);
+        return PlotQuery.newQuery().ownedBy(uuid).whereBasePlot().asSet();
     }
 
     /**
@@ -1112,13 +1082,7 @@ public class PlotSquared {
      * @return Set of Plot
      */
     public Set<Plot> getPlotsAbs(final UUID uuid) {
-        final Set<Plot> plots = new HashSet<>();
-        forEachPlot(value -> {
-            if (value.isOwnerAbs(uuid)) {
-                plots.add(value);
-            }
-        });
-        return Collections.unmodifiableSet(plots);
+        return PlotQuery.newQuery().ownedBy(uuid).asSet();
     }
 
     /**
@@ -2014,6 +1978,23 @@ public class PlotSquared {
         return Collections.unmodifiableSet(set);
     }
 
+    /**
+     * Check if the chunk uses vanilla/non-PlotSquared generation
+     *
+     * @param world            World name
+     * @param chunkCoordinates Chunk coordinates
+     * @return True if the chunk uses non-standard generation, false if not
+     */
+    public boolean isNonStandardGeneration(@NotNull final String world,
+        @NotNull final BlockVector2 chunkCoordinates) {
+        final Location location = new Location(world, chunkCoordinates.getBlockX() << 4, 64, chunkCoordinates.getBlockZ() << 4);
+        final PlotArea area = plotAreaManager.getApplicablePlotArea(location);
+        if (area == null) {
+            return true;
+        }
+        return area.getTerrain() != PlotAreaTerrainType.NONE;
+    }
+
     public boolean isAugmented(@NonNull final String world) {
         final PlotArea[] areas = plotAreaManager.getPlotAreas(world, null);
         return areas != null && (areas.length > 1 || areas[0].getType() != PlotAreaType.NORMAL);
@@ -2103,16 +2084,7 @@ public class PlotSquared {
      */
     public Set<Plot> getPlotsByAlias(@Nullable final String alias,
         @NonNull final String worldname) {
-        final Set<Plot> result = new HashSet<>();
-        if (alias != null) {
-            for (final Plot plot : getPlots()) {
-                if (alias.equals(plot.getAlias()) && (worldname == null || worldname
-                    .equals(plot.getWorldName()))) {
-                    result.add(plot);
-                }
-            }
-        }
-        return Collections.unmodifiableSet(result);
+        return PlotQuery.newQuery().inWorld(worldname).withAlias(alias).asSet();
     }
 
     public Set<PlotArea> getPlotAreas(final String world, final CuboidRegion region) {
