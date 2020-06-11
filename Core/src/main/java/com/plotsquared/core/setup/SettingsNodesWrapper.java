@@ -23,44 +23,30 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.plotsquared.core.plot;
+package com.plotsquared.core.setup;
 
-import com.plotsquared.core.configuration.Caption;
-import com.plotsquared.core.configuration.Captions;
+import com.plotsquared.core.configuration.ConfigurationNode;
 import lombok.Getter;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+/**
+ * This class wraps an array of {@link ConfigurationNode}s.
+ */
+public class SettingsNodesWrapper {
+    @Getter private final ConfigurationNode[] settingsNodes;
+    @Getter private final SetupStep afterwards;
 
-public enum PlotAreaType {
-    NORMAL(Captions.PLOT_AREA_TYPE_NORMAL),
-    AUGMENTED(Captions.PLOT_AREA_TYPE_AUGMENTED),
-    PARTIAL(Captions.PLOT_AREA_TYPE_PARTIAL);
-
-    @Getter private final Caption description;
-
-    private static final Map<String, PlotAreaType> types = Stream.of(values())
-        .collect(Collectors.toMap(e -> e.toString().toLowerCase(), Function.identity()));
-
-    PlotAreaType(Caption description) {
-        this.description = description;
+    public SettingsNodesWrapper(ConfigurationNode[] settingsNodes, SetupStep afterwards) {
+        this.settingsNodes = settingsNodes;
+        this.afterwards = afterwards;
     }
 
-    public static Map<PlotAreaType, Caption> getDescriptionMap() {
-        return Stream.of(values()).collect(Collectors.toMap(e -> e, PlotAreaType::getDescription));
-    }
-
-    public static Optional<PlotAreaType> fromString(String typeName) {
-        return Optional.ofNullable(types.get(typeName.toLowerCase()));
-    }
-
-    @Deprecated public static Optional<PlotAreaType> fromLegacyInt(int typeId) {
-        if (typeId < 0 || typeId >= values().length) {
-            return Optional.empty();
-        }
-        return Optional.of(values()[typeId]);
+    /**
+     * Returns the first step of this wrapper or the step or the
+     * {@code afterwards} step if no step is available.
+     *
+     * @return the first step or {@code afterwards}.
+     */
+    public SetupStep getFirstStep() {
+        return this.settingsNodes.length == 0 ? this.afterwards : new SettingsNodeStep(this.settingsNodes[0], 0, this);
     }
 }

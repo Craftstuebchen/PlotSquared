@@ -23,44 +23,44 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.plotsquared.core.plot;
+package com.plotsquared.core.setup;
 
-import com.plotsquared.core.configuration.Caption;
-import com.plotsquared.core.configuration.Captions;
-import lombok.Getter;
+import com.plotsquared.core.player.PlotPlayer;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Stack;
 
-public enum PlotAreaType {
-    NORMAL(Captions.PLOT_AREA_TYPE_NORMAL),
-    AUGMENTED(Captions.PLOT_AREA_TYPE_AUGMENTED),
-    PARTIAL(Captions.PLOT_AREA_TYPE_PARTIAL);
+/**
+ * This class keeps track of a setup process.
+ * It holds the history and the current setup state.
+ */
+public class SetupProcess {
+    private final PlotAreaBuilder builder;
+    private final Stack<SetupStep> history;
+    private SetupStep current;
 
-    @Getter private final Caption description;
-
-    private static final Map<String, PlotAreaType> types = Stream.of(values())
-        .collect(Collectors.toMap(e -> e.toString().toLowerCase(), Function.identity()));
-
-    PlotAreaType(Caption description) {
-        this.description = description;
+    public SetupProcess() {
+        this.builder = new PlotAreaBuilder();
+        this.history = new Stack<>();
+        this.current = CommonSetupSteps.CHOOSE_GENERATOR;
     }
 
-    public static Map<PlotAreaType, Caption> getDescriptionMap() {
-        return Stream.of(values()).collect(Collectors.toMap(e -> e, PlotAreaType::getDescription));
+    public SetupStep getCurrentStep() {
+        return this.current;
     }
 
-    public static Optional<PlotAreaType> fromString(String typeName) {
-        return Optional.ofNullable(types.get(typeName.toLowerCase()));
-    }
-
-    @Deprecated public static Optional<PlotAreaType> fromLegacyInt(int typeId) {
-        if (typeId < 0 || typeId >= values().length) {
-            return Optional.empty();
+    public void handleInput(PlotPlayer<?> plotPlayer, String argument) {
+        SetupStep previous = this.current;
+        this.current = this.current.handleInput(plotPlayer, this.builder, argument);
+        // push previous step into history
+        if (this.current != previous && this.current != null) {
+            this.history.push(previous);
         }
-        return Optional.of(values()[typeId]);
+    }
+
+    public void back() {
+        if (!this.history.isEmpty()) {
+            this.current.onBack(this.builder);
+            this.current = this.history.pop();
+        }
     }
 }
