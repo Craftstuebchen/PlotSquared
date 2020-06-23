@@ -253,7 +253,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             int z = bloc.getBlockZ();
             int distance = Bukkit.getViewDistance() * 16;
 
-            for (final PlotPlayer player : PlotSquared.imp().getPlayerManager().getPlayers()) {
+            for (final PlotPlayer<?> player : PlotSquared.imp().getPlayerManager().getPlayers()) {
                 Location location = player.getLocation();
                 if (location.getWorld().equals(world)) {
                     if (16 * Math.abs(location.getX() - x) / 16 > distance
@@ -313,7 +313,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             Location location = BukkitUtil.getLocation(e.getEntity());
             if (location.isPlotArea()) {
                 if (e.getEntity() instanceof Player) {
-                    PlotPlayer player = BukkitUtil.getPlayer((Player) e.getEntity());
+                    PlotPlayer<Player> player = BukkitUtil.getPlayer((Player) e.getEntity());
                     Plot plot = player.getCurrentPlot();
                     if (plot != null) {
                         if (!plot.isAdded(player.getUUID())) {
@@ -346,6 +346,7 @@ public class PlayerEvents extends PlotListener implements Listener {
         }
         if (!plot.getFlag(RedstoneFlag.class)) {
             event.setNewCurrent(0);
+            plot.debug("Redstone event was cancelled because redstone = false");
             return;
         }
         if (Settings.Redstone.DISABLE_OFFLINE) {
@@ -372,12 +373,13 @@ public class PlayerEvents extends PlotListener implements Listener {
                 }
                 if (disable) {
                     event.setNewCurrent(0);
+                    plot.debug("Redstone event was cancelled because no trusted player was in the plot");
                     return;
                 }
             }
         }
         if (Settings.Redstone.DISABLE_UNOCCUPIED) {
-            for (final PlotPlayer player : PlotSquared.imp().getPlayerManager().getPlayers()) {
+            for (final PlotPlayer<?> player : PlotSquared.imp().getPlayerManager().getPlayers()) {
                 if (plot.equals(player.getCurrentPlot())) {
                     return;
                 }
@@ -401,6 +403,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                 }
                 if (!plot.getFlag(RedstoneFlag.class)) {
                     event.setCancelled(true);
+                    plot.debug("Prevented comparator update because redstone = false");
                 }
                 return;
             }
@@ -423,6 +426,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                 }
                 if (plot.getFlag(DisablePhysicsFlag.class)) {
                     event.setCancelled(true);
+                    plot.debug("Prevented block physics because disable-physics = true");
                 }
                 return;
             }
@@ -460,6 +464,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                             Plot newPlot = area.getOwnedPlotAbs(location);
                             if (!plot.equals(newPlot)) {
                                 event.setCancelled(true);
+                                plot.debug("Prevented piston update because of invalid edge piston detection");
                                 return;
                             }
                     }
@@ -481,7 +486,7 @@ public class PlayerEvents extends PlotListener implements Listener {
         if (!PlotSquared.get().hasPlotArea(location.getWorld())) {
             return;
         }
-        PlotPlayer pp = BukkitUtil.getPlayer((Player) shooter);
+        PlotPlayer<Player> pp = BukkitUtil.getPlayer((Player) shooter);
         Plot plot = location.getOwnedPlot();
         if (plot != null && !plot.isAdded(pp.getUUID())) {
             entity.remove();
@@ -502,7 +507,7 @@ public class PlayerEvents extends PlotListener implements Listener {
         Plot plot = area.getPlot(location);
         ProjectileSource shooter = entity.getShooter();
         if (shooter instanceof Player) {
-            PlotPlayer pp = BukkitUtil.getPlayer((Player) shooter);
+            PlotPlayer<?> pp = BukkitUtil.getPlayer((Player) shooter);
             if (plot == null) {
                 if (!Permissions.hasPermission(pp, Captions.PERMISSION_PROJECTILE_UNOWNED)) {
                     entity.remove();
@@ -544,7 +549,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        PlotPlayer plotPlayer = BukkitUtil.getPlayer(player);
+        PlotPlayer<Player> plotPlayer = BukkitUtil.getPlayer(player);
         Location location = plotPlayer.getLocation();
         PlotArea area = location.getPlotArea();
         if (area == null) {
@@ -649,7 +654,7 @@ public class PlayerEvents extends PlotListener implements Listener {
     public void onConnect(PlayerJoinEvent event) {
         final Player player = event.getPlayer();
         BukkitUtil.removePlayer(player.getName());
-        final PlotPlayer pp = BukkitUtil.getPlayer(player);
+        final PlotPlayer<Player> pp = BukkitUtil.getPlayer(player);
 
         Location location = pp.getLocation();
         PlotArea area = location.getPlotArea();
@@ -688,7 +693,7 @@ public class PlayerEvents extends PlotListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void playerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
-        PlotPlayer pp = BukkitUtil.getPlayer(player);
+        PlotPlayer<Player> pp = BukkitUtil.getPlayer(player);
         PlotSquared.get().getEventDispatcher().doRespawnTask(pp);
     }
 
@@ -955,7 +960,7 @@ public class PlayerEvents extends PlotListener implements Listener {
         Set<Player> recipients = event.getRecipients();
         recipients.clear();
         Set<Player> spies = new HashSet<>();
-        for (final PlotPlayer pp : PlotSquared.imp().getPlayerManager().getPlayers()) {
+        for (final PlotPlayer<?> pp : PlotSquared.imp().getPlayerManager().getPlayers()) {
             if (pp.getAttribute("chatspy")) {
                 spies.add(((BukkitPlayer) pp).player);
             } else {
@@ -1103,6 +1108,8 @@ public class PlayerEvents extends PlotListener implements Listener {
                     }
                 }
                 return;
+            } else {
+                plot.debug("Explosion was cancelled because explosion = false");
             }
         }
         event.setCancelled(true);
@@ -1147,6 +1154,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             if (area != null) {
                 Plot plot = area.getOwnedPlot(location);
                 if (plot != null && plot.getFlag(MobPlaceFlag.class)) {
+                    plot.debug(e.getType() + " could not change block because mob-place = false");
                     return;
                 }
                 event.setCancelled(true);
@@ -1176,6 +1184,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             if (!plot.hasOwner()) {
                 BukkitPlayer plotPlayer = BukkitUtil.getPlayer(player);
                 if (plot.getFlag(IceFormFlag.class)) {
+                    plot.debug("Ice could not be formed because ice-form = false");
                     return;
                 }
                 event.setCancelled(true);
@@ -1184,6 +1193,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             BukkitPlayer plotPlayer = BukkitUtil.getPlayer(player);
             if (!plot.isAdded(plotPlayer.getUUID())) {
                 if (plot.getFlag(IceFormFlag.class)) {
+                    plot.debug("Ice could not be formed because ice-form = false");
                     return;
                 }
                 event.setCancelled(true);
@@ -1215,21 +1225,25 @@ public class PlayerEvents extends PlotListener implements Listener {
         switch (event.getSource().getType()) {
             case GRASS_BLOCK:
                 if (!plot.getFlag(GrassGrowFlag.class)) {
+                    plot.debug("Grass could not grow because grass-grow = false");
                     event.setCancelled(true);
                 }
                 break;
             case MYCELIUM:
                 if (!plot.getFlag(MycelGrowFlag.class)) {
+                    plot.debug("Mycelium could not grow because mycel-grow = false");
                     event.setCancelled(true);
                 }
                 break;
             case VINE:
                 if (!plot.getFlag(VineGrowFlag.class)) {
+                    plot.debug("Vine could not grow because vine-grow = false");
                     event.setCancelled(true);
                 }
                 break;
             case KELP:
                 if (!plot.getFlag(KelpGrowFlag.class)) {
+                    plot.debug("Kelp could not grow because kelp-grow = false");
                     event.setCancelled(true);
                 }
                 break;
@@ -1256,6 +1270,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             case SNOW:
             case SNOW_BLOCK:
                 if (!plot.getFlag(SnowFormFlag.class)) {
+                    plot.debug("Snow could not form because snow-form = false");
                     event.setCancelled(true);
                 }
                 return;
@@ -1263,6 +1278,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             case FROSTED_ICE:
             case PACKED_ICE:
                 if (!plot.getFlag(IceFormFlag.class)) {
+                    plot.debug("Ice could not form because ice-form = false");
                     event.setCancelled(true);
                 }
         }
@@ -1312,6 +1328,8 @@ public class PlayerEvents extends PlotListener implements Listener {
                     .hasPermission(plotPlayer, Captions.PERMISSION_ADMIN_DESTROY_OTHER)) {
                     return;
                 }
+                plot.debug(player.getName() + " could not break " + block.getType() +
+                    " because it was not in the break flag");
                 event.setCancelled(true);
                 return;
             }
@@ -1340,16 +1358,19 @@ public class PlayerEvents extends PlotListener implements Listener {
         switch (block.getType()) {
             case ICE:
                 if (!plot.getFlag(IceMeltFlag.class)) {
+                    plot.debug("Ice could not melt because ice-melt = false");
                     event.setCancelled(true);
                 }
                 break;
             case SNOW:
                 if (!plot.getFlag(SnowMeltFlag.class)) {
+                    plot.debug("Snow could not melt because snow-melt = false");
                     event.setCancelled(true);
                 }
                 break;
             case FARMLAND:
                 if (!plot.getFlag(SoilDryFlag.class)) {
+                    plot.debug("Soil could not dry because soil-dry = false");
                     event.setCancelled(true);
                 }
                 break;
@@ -1369,6 +1390,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             case FIRE_CORAL_FAN:
             case HORN_CORAL_FAN:
                 if (!plot.getFlag(CoralDryFlag.class)) {
+                    plot.debug("Coral could not dry because coral-dry = false");
                     event.setCancelled(true);
                 }
                 break;
@@ -1387,6 +1409,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             if (plot != null
                 && plot.getFlag(LiquidFlowFlag.class) == LiquidFlowFlag.FlowStatus.DISABLED && event
                 .getBlock().isLiquid()) {
+                plot.debug("Liquid could now flow because liquid-flow = disabled");
                 event.setCancelled(true);
                 return;
             }
@@ -1410,11 +1433,13 @@ public class PlayerEvents extends PlotListener implements Listener {
                 return;
             }
             if (plot.getFlag(DisablePhysicsFlag.class)) {
+                plot.debug(event.getBlock().getType() + " could not update because disable-physics = true");
                 event.setCancelled(true);
                 return;
             }
             if (plot.getFlag(LiquidFlowFlag.class) == LiquidFlowFlag.FlowStatus.DISABLED && event
                 .getBlock().isLiquid()) {
+                plot.debug("Liquid could not flow because liquid-flow = disabled");
                 event.setCancelled(true);
             }
         } else if (!area.contains(fLocation.getX(), fLocation.getZ()) || !Objects
@@ -1695,6 +1720,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                 !Permissions.hasPermission(pp, Captions.PERMISSION_ADMIN_INTERACT_OTHER)) {
                 final ItemStack newStack = new ItemStack(newItem.getType(), newItem.getAmount());
                 event.setCursor(newStack);
+                plot.debug(player.getName() + " could not creative-copy an item because prevent-creative-copy = true");
             }
             return;
         }
@@ -1842,6 +1868,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                     MainUtil.sendMessage(pp, Captions.NO_PERMISSION_EVENT,
                         "plots.admin.interact.other");
                     e.setCancelled(true);
+                    plot.debug(pp.getName() + " could not interact with " + entity.getType() + " bcause misc-interact = false");
                 }
             }
         }
@@ -1869,6 +1896,9 @@ public class PlayerEvents extends PlotListener implements Listener {
         Plot plot = area.getOwnedPlot(location);
         if (plot == null || !plot.getFlag(ExplosionFlag.class)) {
             event.setCancelled(true);
+            if (plot != null) {
+                plot.debug("Explosion was cancelled because explosion = false");
+            }
         }
         event.blockList().removeIf(
             blox -> !plot.equals(area.getOwnedPlot(BukkitUtil.getLocation(blox.getLocation()))));
@@ -2134,6 +2164,7 @@ public class PlayerEvents extends PlotListener implements Listener {
         Plot plot = area.getOwnedPlotAbs(location);
         if (plot == null || plot.getFlag(DisablePhysicsFlag.class)) {
             event.setCancelled(true);
+            plot.debug("Falling block event was cancelled because disable-physics = true");
             return;
         }
         if (event.getTo().hasGravity()) {
@@ -2169,6 +2200,7 @@ public class PlayerEvents extends PlotListener implements Listener {
 
         Plot plot = location.getOwnedPlot();
         if (plot == null || !plot.getFlag(BlockBurnFlag.class)) {
+            plot.debug("Block burning was cancelled because block-burn = false");
             event.setCancelled(true);
         }
 
@@ -2222,6 +2254,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             if (ignitingEntity != null) {
                 if (!plot.getFlag(BlockIgnitionFlag.class)) {
                     event.setCancelled(true);
+                    plot.debug("Block ignition was cancelled because block-ignition = false");
                     return;
                 }
                 if (igniteCause == BlockIgniteEvent.IgniteCause.FIREBALL) {
@@ -2472,6 +2505,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                     MainUtil.sendMessage(pp, Captions.NO_PERMISSION_EVENT,
                         Captions.PERMISSION_ADMIN_DESTROY_OTHER);
                     event.setCancelled(true);
+                    plot.debug(p.getName() + " could not break hanging entity because hanging-break = false");
                 }
             }
         } else if (remover instanceof Projectile) {
@@ -2500,6 +2534,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                                 MainUtil.sendMessage(player, Captions.NO_PERMISSION_EVENT,
                                     Captions.PERMISSION_ADMIN_DESTROY_OTHER);
                                 event.setCancelled(true);
+                                plot.debug(player.getName() + " could not break hanging entity because hanging-break = false");
                             }
                         }
                     }
@@ -2618,6 +2653,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                         MainUtil.sendMessage(pp, Captions.NO_PERMISSION_EVENT,
                             "plots.admin.vehicle.break.other");
                         event.setCancelled(true);
+                        plot.debug(pp.getName() + " could not break vehicle because vehicle-break = false");
                     }
                 }
             }
@@ -2812,6 +2848,9 @@ public class PlayerEvents extends PlotListener implements Listener {
                 if (!Permissions.hasPermission(plotPlayer, "plots.admin.destroy." + stub)) {
                     MainUtil.sendMessage(plotPlayer, Captions.NO_PERMISSION_EVENT,
                         "plots.admin.destroy." + stub);
+                    if (plot != null) {
+                        plot.debug(player.getName() + " could not break armor stand because misc-break = false");
+                    }
                     return false;
                 }
             } else if (EntityCategories.HOSTILE.contains(entityType)) {
@@ -2822,6 +2861,9 @@ public class PlayerEvents extends PlotListener implements Listener {
                 if (!Permissions.hasPermission(plotPlayer, "plots.admin.pve." + stub)) {
                     MainUtil.sendMessage(plotPlayer, Captions.NO_PERMISSION_EVENT,
                         "plots.admin.pve." + stub);
+                    if (plot != null) {
+                        plot.debug(player.getName()  + " could not attack " + entityType + " because pve = false OR hostile-attack = false");
+                    }
                     return false;
                 }
             } else if (EntityCategories.TAMEABLE.contains(entityType)) { // victim is tameable
@@ -2832,6 +2874,9 @@ public class PlayerEvents extends PlotListener implements Listener {
                 if (!Permissions.hasPermission(plotPlayer, "plots.admin.pve." + stub)) {
                     MainUtil.sendMessage(plotPlayer, Captions.NO_PERMISSION_EVENT,
                         "plots.admin.pve." + stub);
+                    if (plot != null) {
+                        plot.debug(player.getName()  + " could not attack " + entityType + " because pve = false OR tamned-attack = false");
+                    }
                     return false;
                 }
             } else if (EntityCategories.PLAYER.contains(entityType)) {
@@ -2840,6 +2885,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                         .hasPermission(plotPlayer, "plots.admin.pvp." + stub)) {
                         MainUtil.sendMessage(plotPlayer, Captions.NO_PERMISSION_EVENT,
                             "plots.admin.pvp." + stub);
+                        plot.debug(player.getName()  + " could not attack " + entityType + " because pve = false");
                         return false;
                     } else {
                         return true;
@@ -2853,6 +2899,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             } else if (EntityCategories.ANIMAL.contains(entityType)) { // victim is animal
                 if (plot != null && (plot.getFlag(AnimalAttackFlag.class) || plot
                     .getFlag(PveFlag.class) || plot.isAdded(plotPlayer.getUUID()))) {
+                    plot.debug(player.getName()  + " could not attack " + entityType + " because pve = false OR animal-attack = false");
                     return true;
                 }
                 if (!Permissions.hasPermission(plotPlayer, "plots.admin.pve." + stub)) {
@@ -2871,6 +2918,9 @@ public class PlayerEvents extends PlotListener implements Listener {
                 if (!Permissions.hasPermission(plotPlayer, "plots.admin.pve." + stub)) {
                     MainUtil.sendMessage(plotPlayer, Captions.NO_PERMISSION_EVENT,
                         "plots.admin.pve." + stub);
+                    if (plot != null) {
+                        plot.debug(player.getName() + " could not attack " + entityType + " because pve = false");
+                    }
                     return false;
                 }
             }
@@ -2959,6 +3009,8 @@ public class PlayerEvents extends PlotListener implements Listener {
                     MainUtil.sendMessage(pp, Captions.NO_PERMISSION_EVENT,
                         Captions.PERMISSION_ADMIN_BUILD_OTHER);
                     event.setCancelled(true);
+                    plot.debug(player.getName() + " could not place " + event.getBlock().getType()
+                        + " because of the place flag");
                     return;
                 }
             } else if (Settings.Done.RESTRICT_BUILDING && DoneFlag.isDone(plot)) {
@@ -2973,6 +3025,7 @@ public class PlayerEvents extends PlotListener implements Listener {
                 Block block = event.getBlockPlaced();
                 if (block.getType().hasGravity()) {
                     sendBlockChange(block.getLocation(), block.getBlockData());
+                    plot.debug(event.getBlock().getType() + " did not fall because of disable-physics = true");
                 }
             }
         } else if (!Permissions.hasPermission(pp, Captions.PERMISSION_ADMIN_BUILD_ROAD)) {
@@ -2991,6 +3044,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             return;
         }
         if (plot.getFlag(InvincibleFlag.class)) {
+            plot.debug(event.getEntity().getName() + " could not take damage because invincible = true");
             event.setCancelled(true);
         }
     }
@@ -3005,6 +3059,7 @@ public class PlayerEvents extends PlotListener implements Listener {
         UUID uuid = pp.getUUID();
         if (!plot.isAdded(uuid)) {
             if (!plot.getFlag(ItemDropFlag.class)) {
+                plot.debug(player.getName() + " could not drop item because of item-drop = false");
                 event.setCancelled(true);
             }
         }
@@ -3021,6 +3076,7 @@ public class PlayerEvents extends PlotListener implements Listener {
             }
             UUID uuid = pp.getUUID();
             if (!plot.isAdded(uuid) && plot.getFlag(DropProtectionFlag.class)) {
+                plot.debug(player.getName() + " could not pick up item because of drop-protection = true");
                 event.setCancelled(true);
             }
         }
@@ -3029,6 +3085,7 @@ public class PlayerEvents extends PlotListener implements Listener {
     @EventHandler public void onDeath(final PlayerDeathEvent event) {
         final Plot plot = BukkitUtil.getPlayer(event.getEntity()).getCurrentPlot();
         if (plot != null && plot.getFlag(KeepInventoryFlag.class)) {
+            plot.debug(event.getEntity().getName() + " kept their inventory because of keep-inventory = true");
             event.setKeepInventory(true);
         }
     }
