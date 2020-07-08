@@ -154,12 +154,10 @@ public class PlotSquared {
     public File styleFile;
     public File configFile;
     public File worldsFile;
-    public File commandsFile;
     public File translationFile;
     public YamlConfiguration style;
     public YamlConfiguration worlds;
     public YamlConfiguration storage;
-    public YamlConfiguration commands;
     // Temporary hold the plots/clusters before the worlds load
     public HashMap<String, Set<PlotCluster>> clusters_tmp;
     public HashMap<String, HashMap<PlotId, Plot>> plots_tmp;
@@ -261,6 +259,7 @@ public class PlotSquared {
             if (Settings.Enabled_Components.CHUNK_PROCESSOR) {
                 this.IMP.registerChunkProcessor();
             }
+            startExpiryTasks();
             // Create Event utility class
             eventDispatcher = new EventDispatcher();
             // create Hybrid utility class
@@ -1781,6 +1780,7 @@ public class PlotSquared {
             }
             this.style = YamlConfiguration.loadConfiguration(this.styleFile);
             setupStyle();
+            this.style.save(this.styleFile);
         } catch (IOException err) {
             err.printStackTrace();
             PlotSquared.log("Failed to save style.yml");
@@ -1795,23 +1795,6 @@ public class PlotSquared {
             setupStorage();
         } catch (IOException ignored) {
             PlotSquared.log("Failed to save storage.yml");
-        }
-        try {
-            this.commandsFile = new File(folder, "commands.yml");
-            if (!this.commandsFile.exists() && !this.commandsFile.createNewFile()) {
-                PlotSquared.log(
-                    "Could not the storage settings file, please create \"commands.yml\" manually.");
-            }
-            this.commands = YamlConfiguration.loadConfiguration(this.commandsFile);
-        } catch (IOException ignored) {
-            PlotSquared.log("Failed to save commands.yml");
-        }
-        try {
-            this.style.save(this.styleFile);
-            this.commands.save(this.commandsFile);
-        } catch (IOException e) {
-            PlotSquared.log("Configuration file saving failed");
-            e.printStackTrace();
         }
         return true;
     }
