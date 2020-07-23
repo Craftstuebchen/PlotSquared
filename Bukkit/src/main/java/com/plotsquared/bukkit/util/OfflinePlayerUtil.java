@@ -25,6 +25,7 @@
  */
 package com.plotsquared.bukkit.util;
 
+import com.sk89q.worldedit.WorldEdit;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
@@ -62,7 +63,7 @@ public class OfflinePlayerUtil {
         Object worldServer = getWorldServer();
         Object profile = newGameProfile(id, name);
         Class<?> entityPlayerClass = getNmsClass("EntityPlayer");
-        Constructor entityPlayerConstructor =
+        Constructor<?> entityPlayerConstructor =
             makeConstructor(entityPlayerClass, getNmsClass("MinecraftServer"),
                 getNmsClass("WorldServer"), getUtilClass("com.mojang.authlib.GameProfile"),
                 getNmsClass("PlayerInteractManager"));
@@ -76,7 +77,7 @@ public class OfflinePlayerUtil {
         if (gameProfileClass == null) { //Before uuids
             return name;
         }
-        Constructor gameProfileConstructor =
+        Constructor<?> gameProfileConstructor =
             makeConstructor(gameProfileClass, UUID.class, String.class);
         if (gameProfileConstructor == null) { //Version has string constructor
             gameProfileConstructor = makeConstructor(gameProfileClass, String.class, String.class);
