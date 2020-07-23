@@ -27,17 +27,21 @@ package com.plotsquared.bukkit;
 
 import com.plotsquared.bukkit.generator.BukkitHybridUtils;
 import com.plotsquared.bukkit.generator.BukkitPlotGenerator;
+import com.plotsquared.bukkit.listener.BlockEventListener;
 import com.plotsquared.bukkit.listener.ChunkListener;
+import com.plotsquared.bukkit.listener.EntityEventListener;
 import com.plotsquared.bukkit.listener.EntitySpawnListener;
 import com.plotsquared.bukkit.listener.PaperListener;
-import com.plotsquared.bukkit.listener.PlayerEvents;
+import com.plotsquared.bukkit.listener.PlayerEventListener;
+import com.plotsquared.bukkit.listener.ProjectileEventListener;
+import com.plotsquared.bukkit.listener.ServerListener;
 import com.plotsquared.bukkit.listener.SingleWorldListener;
 import com.plotsquared.bukkit.listener.WorldEvents;
 import com.plotsquared.bukkit.managers.BukkitWorldManager;
 import com.plotsquared.bukkit.managers.HyperverseWorldManager;
 import com.plotsquared.bukkit.managers.MultiverseWorldManager;
 import com.plotsquared.bukkit.placeholder.PlaceholderFormatter;
-import com.plotsquared.bukkit.placeholder.Placeholders;
+import com.plotsquared.bukkit.placeholder.PAPIPlaceholders;
 import com.plotsquared.bukkit.player.BukkitPlayerManager;
 import com.plotsquared.bukkit.queue.BukkitLocalQueue;
 import com.plotsquared.bukkit.schematic.BukkitSchematicHandler;
@@ -259,9 +263,11 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain<
             PlotSquared.log(Captions.PREFIX + "(UUID) Using the offline mode UUID service");
         }
 
-        final OfflinePlayerUUIDService offlinePlayerUUIDService = new OfflinePlayerUUIDService();
-        impromptuPipeline.registerService(offlinePlayerUUIDService);
-        backgroundPipeline.registerService(offlinePlayerUUIDService);
+        if (Settings.UUID.SERVICE_BUKKIT) {
+            final OfflinePlayerUUIDService offlinePlayerUUIDService = new OfflinePlayerUUIDService();
+            impromptuPipeline.registerService(offlinePlayerUUIDService);
+            backgroundPipeline.registerService(offlinePlayerUUIDService);
+        }
 
         final SQLiteUUIDService sqLiteUUIDService = new SQLiteUUIDService("user_cache.db");
 
@@ -274,7 +280,8 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain<
         }
 
         final LuckPermsUUIDService luckPermsUUIDService;
-        if (Bukkit.getPluginManager().getPlugin("LuckPerms") != null) {
+        if (Settings.UUID.SERVICE_LUCKPERMS &&
+            Bukkit.getPluginManager().getPlugin("LuckPerms") != null) {
             luckPermsUUIDService = new LuckPermsUUIDService();
             PlotSquared
                 .log(Captions.PREFIX + "(UUID) Using LuckPerms as a complementary UUID service");
@@ -283,7 +290,8 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain<
         }
 
         final BungeePermsUUIDService bungeePermsUUIDService;
-        if (Bukkit.getPluginManager().getPlugin("BungeePerms") != null) {
+        if (Settings.UUID.SERVICE_BUNGEE_PERMS &&
+            Bukkit.getPluginManager().getPlugin("BungeePerms") != null) {
             bungeePermsUUIDService = new BungeePermsUUIDService();
             PlotSquared
                 .log(Captions.PREFIX + "(UUID) Using BungeePerms as a complementary UUID service");
@@ -292,17 +300,17 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain<
         }
 
         final EssentialsUUIDService essentialsUUIDService;
-        if (Bukkit.getPluginManager().getPlugin("Essentials") != null) {
+        if (Settings.UUID.SERVICE_ESSENTIALSX && Bukkit.getPluginManager().getPlugin("Essentials") != null) {
             essentialsUUIDService = new EssentialsUUIDService();
             PlotSquared
-                .log(Captions.PREFIX + "(UUID) Using Essentials as a complementary UUID service");
+                .log(Captions.PREFIX + "(UUID) Using EssentialsX as a complementary UUID service");
         } else {
             essentialsUUIDService = null;
         }
 
         if (!Settings.UUID.OFFLINE) {
             // If running Paper we'll also try to use their profiles
-            if (PaperLib.isPaper()) {
+            if (Bukkit.getOnlineMode() && PaperLib.isPaper() && Settings.UUID.SERVICE_PAPER) {
                 final PaperUUIDService paperUUIDService = new PaperUUIDService();
                 impromptuPipeline.registerService(paperUUIDService);
                 backgroundPipeline.registerService(paperUUIDService);
@@ -359,14 +367,11 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain<
         }
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            new Placeholders().register();
+            new PAPIPlaceholders().register();
             if (Settings.Enabled_Components.EXTERNAL_PLACEHOLDERS) {
                 ChatFormatter.formatters.add(new PlaceholderFormatter());
             }
             PlotSquared.log(Captions.PREFIX + "&6PlotSquared hooked into PlaceholderAPI");
-        } else {
-            PlotSquared
-                .debug(Captions.PREFIX + "&6PlaceholderAPI is not in use. Hook deactivated.");
         }
 
         this.startMetrics();
@@ -891,9 +896,11 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain<
         return (ChunkGenerator) result.specify(worldName);
     }
 
-    @Override public void registerPlayerEvents() {
-        final PlayerEvents main = new PlayerEvents();
-        getServer().getPluginManager().registerEvents(main, this);
+    @Override public void registerEvents() {
+        getServer().getPluginManager().registerEvents(new PlayerEventListener(), this);
+        getServer().getPluginManager().registerEvents(new BlockEventListener(), this);
+        getServer().getPluginManager().registerEvents(new EntityEventListener(), this);
+        getServer().getPluginManager().registerEvents(new ProjectileEventListener(), this);
         getServer().getPluginManager().registerEvents(new EntitySpawnListener(), this);
         if (PaperLib.isPaper() && Settings.Paper_Components.PAPER_LISTENERS) {
             getServer().getPluginManager().registerEvents(new PaperListener(), this);
@@ -1043,6 +1050,11 @@ public final class BukkitMain extends JavaPlugin implements Listener, IPlotMain<
 
     @Override public void registerWorldEvents() {
         getServer().getPluginManager().registerEvents(new WorldEvents(), this);
+    }
+
+    @Override
+    public void registerServerEvents() {
+        getServer().getPluginManager().registerEvents(new ServerListener(this), this);
     }
 
     @NotNull @Override public IndependentPlotGenerator getDefaultGenerator() {

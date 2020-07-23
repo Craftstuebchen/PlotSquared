@@ -162,7 +162,7 @@ public interface IPlotMain<P> extends ILogger {
     /**
      * Register the protection system.
      */
-    void registerPlayerEvents();
+    void registerEvents();
 
     /**
      * Register force field events.
@@ -269,6 +269,11 @@ public interface IPlotMain<P> extends ILogger {
      * being generated).
      */
     void registerWorldEvents();
+
+    /**
+     * Register events related to the server
+     */
+    void registerServerEvents();
 
     /**
      * Usually HybridGen

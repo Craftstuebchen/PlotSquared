@@ -14,6 +14,7 @@ repositories {
     maven { url = "https://ci.ender.zone/plugin/repository/everything/" }
     maven { url = "https://mvn.intellectualsites.com/content/repositories/snapshots" }
     maven { url = "https://repo.wea-ondara.net/repository/public/" }
+    maven { url = "http://repo.mvdw-software.be/content/groups/public/" }
     mavenLocal()
 }
 
@@ -28,7 +29,7 @@ dependencies {
         exclude(module: "bukkit")
 
     }
-    compile("io.papermc:paperlib:1.0.2")
+    compile("io.papermc:paperlib:1.0.4")
     implementation("net.kyori:text-adapter-bukkit:3.0.3")
     compile("com.github.MilkBowl:VaultAPI:1.7") {
         exclude(module: "bukkit")
@@ -41,6 +42,7 @@ dependencies {
     implementation("net.alpenblock:BungeePerms:4.0-dev-106")
     compile("se.hyperver.hyperverse:Core:0.6.0-SNAPSHOT"){ transitive = false }
     compile('com.sk89q:squirrelid:1.0.0-SNAPSHOT'){ transitive = false }
+    compile('be.maximvdw:MVdWPlaceholderAPI:3.1.1-SNAPSHOT'){ transitive = false }
 }
 
 sourceCompatibility = 1.8
@@ -94,7 +96,7 @@ task copyFiles {
 shadowJar {
     dependencies {
         include(dependency(":PlotSquared-Core"))
-        include(dependency("io.papermc:paperlib:1.0.2"))
+        include(dependency("io.papermc:paperlib:1.0.4"))
         include(dependency("net.kyori:text-adapter-bukkit:3.0.3"))
         include(dependency("org.bstats:bstats-bukkit:1.7"))
         include(dependency("org.khelekore:prtree:1.7.0-SNAPSHOT"))
