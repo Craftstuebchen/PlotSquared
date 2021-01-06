@@ -8,7 +8,7 @@
  *                                    | |
  *                                    |_|
  *            PlotSquared plot management system for Minecraft
- *                  Copyright (C) 2020 IntellectualSites
+ *                  Copyright (C) 2021 IntellectualSites
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -141,7 +141,7 @@ public class DebugPaste extends SubCommand {
                 try {
                     final File MultiverseWorlds = new File(PlotSquared.get().IMP.getDirectory(),
                         "../Multiverse-Core/worlds.yml");
-                    incendoPaster.addFile(MultiverseWorlds);
+                    incendoPaster.addFile(MultiverseWorlds, "Multiverse-Core/worlds.yml");
                 } catch (final IOException ignored) {
                     MainUtil.sendMessage(player,
                         "&cSkipping Multiverse worlds.yml because the plugin is not in use");
