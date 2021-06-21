@@ -15,7 +15,7 @@ jobs:
           java-version: "16"
       - name: "Clean Build"
         run: "./gradlew clean build"
-    - uses: "actions/upload-artifact@v2-preview"
-      with:
-        name: "PlotSquared"
-        path: "target/PlotSquared-Bukkit-*.jar"
+      - uses: "actions/upload-artifact@v2-preview"
+        with:
+          name: "PlotSquared"
+          path: "target/PlotSquared-Bukkit-*.jar"
