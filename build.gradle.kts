@@ -14,7 +14,7 @@ plugins {
     idea
 }
 
-var ver by extra("6.0.2")
+var ver by extra("6.0.6")
 var versuffix by extra("-SNAPSHOT")
 val versionsuffix: String? by project
 if (versionsuffix != null) {
@@ -40,17 +40,12 @@ allprojects {
         }
 
         maven {
-            name = "IntellectualSites Releases Repository"
-            url = uri("https://mvn.intellectualsites.com/content/repositories/releases")
+            name = "IntellectualSites"
+            url = uri("https://mvn.intellectualsites.com/content/groups/public/")
         }
 
         maven {
-            name = "IntellectualSites Snapshots Repository"
-            url = uri("https://mvn.intellectualsites.com/content/repositories/snapshots")
-        }
-
-        maven {
-            name = "EngineHub Repository"
+            name = "EngineHub"
             url = uri("https://maven.enginehub.org/repo/")
         }
     }
