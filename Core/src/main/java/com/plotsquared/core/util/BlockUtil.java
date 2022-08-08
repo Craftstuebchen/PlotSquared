@@ -80,6 +80,9 @@ public final class BlockUtil {
      *         could be parsed
      */
     public static @Nullable BlockState get(final @NonNull String id) {
+        if(id.isEmpty()){
+            return null;
+        }
         if (id.length() == 1 && id.charAt(0) == '*') {
             return FuzzyBlockState.builder().type(BlockTypes.AIR).build();
         }
