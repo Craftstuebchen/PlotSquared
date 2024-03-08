@@ -52,6 +52,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.projectiles.BlockProjectileSource;
 import org.bukkit.projectiles.ProjectileSource;
@@ -336,9 +337,17 @@ public class BukkitEntityUtil {
                 }
             }
             return true;
-        } else if (dplot != null && (!dplot.equals(vplot) || Objects
-                .equals(dplot.getOwnerAbs(), vplot.getOwnerAbs()))) {
-            return vplot != null && vplot.getFlag(PveFlag.class);
+        } else {
+            if (damager instanceof ThrownPotion thrownPotion && thrownPotion.getShooter() instanceof BlockProjectileSource && Objects.equals(
+                    dplot,
+                    vplot
+            )) {
+                return true;
+            }
+
+            if (dplot != null && (!dplot.equals(vplot) || Objects.equals(dplot.getOwnerAbs(), vplot.getOwnerAbs()))) {
+                return vplot != null && vplot.getFlag(PveFlag.class);
+            }
         }
         //disable the firework damage. too much of a headache to support at the moment.
         if (vplot != null) {
